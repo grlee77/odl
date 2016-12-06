@@ -541,7 +541,7 @@ class DiscretizedSpaceElement(DiscretizedSetElement, Tensor):
 
 
 def dspace_type(space, impl, dtype=None):
-    """Select the correct corresponding n-tuples space.
+    """Select the correct corresponding tensor space.
 
     Parameters
     ----------
@@ -551,7 +551,7 @@ def dspace_type(space, impl, dtype=None):
         consistent with it.
     impl : string
         Implementation backend for the data space
-    dtype : `numpy.dtype`, optional
+    dtype : optional
         Data type which the space is supposed to use. If ``None`` is
         given, the space type is purely determined from ``space`` and
         ``impl``. Otherwise, it must be compatible with the
