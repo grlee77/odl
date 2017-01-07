@@ -60,10 +60,10 @@ class DiscretizedSet(TensorSet):
         Parameters
         ----------
         uspace : `FunctionSet`
-            The undiscretized (abstract) set to be discretized
+            The undiscretized (abstract) set to be discretized.
         dspace : `TensorSet`
             Data space providing containers for the values of a
-            discretized object
+            discretized object.
         sampling : `Operator`, optional
             Operator mapping a `uspace` element to a `dspace` element.
             Must satisfy ``sampling.domain == uspace``,
@@ -110,7 +110,7 @@ class DiscretizedSet(TensorSet):
                                  'the undiscretized space {}'
                                  ''.format(interpol.range, uspace))
 
-        super().__init__(dspace.size, dspace.dtype)
+        TensorSet.__init__(self, dspace.shape, dspace.dtype, dspace.order)
         self.__uspace = uspace
         self.__dspace = dspace
         self.__sampling = sampling
@@ -118,22 +118,12 @@ class DiscretizedSet(TensorSet):
 
     @property
     def uspace(self):
-        """Undiscretized/continuous space of this discretization.
-
-        Returns
-        -------
-        uspace : `FunctionSet`
-        """
+        """Undiscretized/continuous space of this discretization."""
         return self.__uspace
 
     @property
     def dspace(self):
-        """Space for the coefficients of the elements of this space.
-
-        Returns
-        -------
-        dspace : `TensorSet`
-        """
+        """Space for the coefficients of the elements of this space."""
         return self.__dspace
 
     @property
@@ -143,7 +133,7 @@ class DiscretizedSet(TensorSet):
 
     @property
     def sampling(self):
-        """Operator mapping a `uspace` element to an n-tuple."""
+        """Operator mapping a `uspace` element to a tensor."""
         if self.__sampling is not None:
             return self.__sampling
         else:
@@ -151,7 +141,7 @@ class DiscretizedSet(TensorSet):
 
     @property
     def interpolation(self):
-        """Operator mapping an n-tuple to a `uspace` element."""
+        """Operator mapping a tensor to a `uspace` element."""
         if self.__interpolation is not None:
             return self.__interpolation
         else:
@@ -438,7 +428,7 @@ class DiscretizedSpace(DiscretizedSet, TensorSpace):
             ``interpol.domain == dspace``, ``interpol.range == uspace``.
         """
         DiscretizedSet.__init__(self, uspace, dspace, sampling, interpol)
-        TensorSpace.__init__(self, dspace.size, dspace.dtype)
+        TensorSpace.__init__(self, dspace.shape, dspace.dtype, dspace.order)
 
         if not isinstance(uspace, LinearSpace):
             raise TypeError('`uspace` {!r} not a LinearSpace '
