@@ -404,7 +404,7 @@ class MatrixWeighting(Weighting):
     def __hash__(self):
         """Return ``hash(self)``."""
         # TODO: Better hash for matrix?
-        return super().__hash__() ^ hash(self.matrix.tostring())
+        return hash((super().__hash__(), self.matrix.tobytes()))
 
     def equiv(self, other):
         """Test if other is an equivalent weighting.
@@ -676,17 +676,22 @@ class ConstWeighting(Weighting):
         """
         super().__init__(impl=impl, exponent=exponent,
                          dist_using_inner=dist_using_inner)
-        self._const = float(const)
+        self.__const = float(const)
         if self.const <= 0:
             raise ValueError('expected positive constant, got {}'
                              ''.format(const))
         if not np.isfinite(self.const):
             raise ValueError('`const` {} is invalid'.format(const))
 
+    def __hash__(self):
+        """Return ``hash(self)``."""
+        return hash((type(self), self.const, self.impl, self.exponent,
+                     self.dist_using_inner))
+
     @property
     def const(self):
         """Weighting constant of this inner product."""
-        return self._const
+        return self.__const
 
     def __eq__(self, other):
         """Return ``self == other``.
@@ -851,7 +856,7 @@ class CustomInner(Weighting):
 
     def __hash__(self):
         """Return ``hash(self)``."""
-        return super().__hash__() ^ hash(self.inner)
+        return hash((super().__hash__(), self.inner))
 
     @property
     def repr_part(self):
@@ -922,7 +927,7 @@ class CustomNorm(Weighting):
 
     def __hash__(self):
         """Return ``hash(self)``."""
-        return super().__hash__() ^ hash(self.norm)
+        return hash((super().__hash__(), self.norm))
 
     @property
     def repr_part(self):
@@ -999,7 +1004,7 @@ class CustomDist(Weighting):
 
     def __hash__(self):
         """Return ``hash(self)``."""
-        return super().__hash__() ^ hash(self.dist)
+        return hash((super().__hash__(), self.dist))
 
     @property
     def repr_part(self):
@@ -1016,6 +1021,5 @@ class CustomDist(Weighting):
 
 
 if __name__ == '__main__':
-    # pylint: disable=wrong-import-position
     from odl.util.testutils import run_doctests
     run_doctests()
