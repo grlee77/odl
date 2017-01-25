@@ -10,7 +10,6 @@
 
 # Imports for common Python 2/3 codebase
 from __future__ import print_function, division, absolute_import
-from builtins import super
 
 import numpy as np
 
@@ -260,8 +259,8 @@ class MatrixWeighting(Weighting):
         precomp_mat_pow = kwargs.pop('precomp_mat_pow', False)
         self._cache_mat_pow = bool(kwargs.pop('cache_mat_pow', True))
         self._cache_mat_decomp = bool(kwargs.pop('cache_mat_decomp', False))
-        super().__init__(impl=impl, exponent=exponent,
-                         dist_using_inner=dist_using_inner)
+        super(MatrixWeighting, self).__init__(
+            impl=impl, exponent=exponent, dist_using_inner=dist_using_inner)
 
         # Check and set matrix
         if scipy.sparse.isspmatrix(matrix):
