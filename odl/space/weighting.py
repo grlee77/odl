@@ -14,7 +14,7 @@ from __future__ import print_function, division, absolute_import
 import numpy as np
 
 from odl.space.base_tensors import Tensor
-from odl.util import array1d_repr, arraynd_repr, signature_string, indent_rows
+from odl.util import arraynd_repr, signature_string, indent_rows
 
 
 __all__ = ('MatrixWeighting', 'ArrayWeighting', 'ConstWeighting',
@@ -278,7 +278,7 @@ class MatrixWeighting(Weighting):
             raise ValueError('matrix has shape {}, expected a square matrix'
                              ''.format(self._matrix.shape))
 
-        if (self.matrix_issparse and
+        if (scipy.sparse.isspmatrix(self.matrix) and
                 self.exponent not in (1.0, 2.0, float('inf'))):
             raise NotImplementedError('sparse matrices only supported for '
                                       'exponent 1.0, 2.0 or `inf`')
@@ -304,12 +304,6 @@ class MatrixWeighting(Weighting):
         """Weighting matrix of this inner product."""
         return self._matrix
 
-    @property
-    def matrix_issparse(self):
-        """Whether the representing matrix is sparse or not."""
-        import scipy.sparse
-        return scipy.sparse.isspmatrix(self.matrix)
-
     def is_valid(self):
         """Test if the matrix is positive definite Hermitian.
 
@@ -319,7 +313,10 @@ class MatrixWeighting(Weighting):
         which can be very time-consuming for large matrices. Sparse
         matrices are not supported.
         """
-        if self.matrix_issparse:
+        # Lazy import to improve `import odl` time
+        import scipy.sparse
+
+        if scipy.sparse.isspmatrix(self.matrix):
             raise NotImplementedError('validation not supported for sparse '
                                       'matrices')
         elif self._eigval is not None:
@@ -365,7 +362,7 @@ class MatrixWeighting(Weighting):
         import scipy.sparse
 
         # TODO: fix dead link `scipy.linalg.decomp.eigh`
-        if self.matrix_issparse:
+        if scipy.sparse.isspmatrix(self.matrix):
             raise NotImplementedError('sparse matrix not supported')
 
         if cache is None:
@@ -397,13 +394,14 @@ class MatrixWeighting(Weighting):
         if other is self:
             return True
 
-        return (super().__eq__(other) and
+        return (super(MatrixWeighting, self).__eq__(other) and
                 self.matrix is getattr(other, 'matrix', None))
 
     def __hash__(self):
         """Return ``hash(self)``."""
         # TODO: Better hash for matrix?
-        return hash((super().__hash__(), self.matrix.tobytes()))
+        return hash((super(MatrixWeighting, self).__hash__(),
+                     self.matrix.tobytes()))
 
     def equiv(self, other):
         """Test if other is an equivalent weighting.
@@ -416,6 +414,9 @@ class MatrixWeighting(Weighting):
             weighting for any input, ``False`` otherwise. This is checked
             by entry-wise comparison of matrices/arrays/constants.
         """
+        # Lazy import to improve `import odl` time
+        import scipy.sparse
+
         # Optimization for equality
         if self == other:
             return True
@@ -427,7 +428,7 @@ class MatrixWeighting(Weighting):
             if self.matrix.shape != other.matrix.shape:
                 return False
 
-            if self.matrix_issparse:
+            if scipy.sparse.isspmatrix(self.matrix):
                 if other.matrix_issparse:
                     # Optimization for different number of nonzero elements
                     if self.matrix.nnz != other.matrix.nnz:
@@ -445,7 +446,7 @@ class MatrixWeighting(Weighting):
                     return np.array_equal(self.matrix, other.matrix)
 
         elif isinstance(other, ArrayWeighting):
-            if self.matrix_issparse:
+            if scipy.sparse.isspmatrix(self.matrix):
                 return (np.array_equiv(self.matrix.diagonal(),
                                        other.array) and
                         np.array_equal(self.matrix.asformat('dia').offsets,
@@ -455,7 +456,7 @@ class MatrixWeighting(Weighting):
                     self.matrix, other.array * np.eye(self.matrix.shape[0]))
 
         elif isinstance(other, ConstWeighting):
-            if self.matrix_issparse:
+            if scipy.sparse.isspmatrix(self.matrix):
                 return (np.array_equiv(self.matrix.diagonal(), other.const) and
                         np.array_equal(self.matrix.asformat('dia').offsets,
                                        np.array([0])))
@@ -468,7 +469,10 @@ class MatrixWeighting(Weighting):
     @property
     def repr_part(self):
         """Return a string usable in a space's ``__repr__`` method."""
-        if self.matrix_issparse:
+        # Lazy import to improve `import odl` time
+        import scipy.sparse
+
+        if scipy.sparse.isspmatrix(self.matrix):
             part = 'weighting={}'.format(self.matrix)
         else:
             part = 'weighting={}'.format(arraynd_repr(self.matrix, nprint=10))
@@ -480,7 +484,10 @@ class MatrixWeighting(Weighting):
 
     def __repr__(self):
         """Return ``repr(self)``."""
-        if self.matrix_issparse:
+        # Lazy import to improve `import odl` time
+        import scipy.sparse
+
+        if scipy.sparse.isspmatrix(self.matrix):
             inner_fstr = ('<{shape} sparse matrix, format {fmt!r}, {nnz} '
                           'stored entries>')
             fmt = self.matrix.format
@@ -550,8 +557,8 @@ class ArrayWeighting(Weighting):
 
             This option can only be used if ``exponent`` is 2.0.
         """
-        super().__init__(impl=impl, exponent=exponent,
-                         dist_using_inner=dist_using_inner)
+        super(ArrayWeighting, self).__init__(
+            impl=impl, exponent=exponent, dist_using_inner=dist_using_inner)
 
         # We store our "own" data structures as-is to retain Numpy
         # compatibility while avoiding copies. Other things are run through
@@ -589,13 +596,14 @@ class ArrayWeighting(Weighting):
         if other is self:
             return True
 
-        return (super().__eq__(other) and
+        return (super(ArrayWeighting, self).__eq__(other) and
                 self.array is getattr(other, 'array', None))
 
     def __hash__(self):
         """Return ``hash(self)``."""
         # TODO: Better hash for array?
-        return super().__hash__() ^ hash(self.array.tostring())
+        return hash(super(ArrayWeighting, self).__hash__(),
+                    self.array.tobytes())
 
     def equiv(self, other):
         """Return True if other is an equivalent weighting.
@@ -673,8 +681,8 @@ class ConstWeighting(Weighting):
 
             This option can only be used if ``exponent`` is 2.0.
         """
-        super().__init__(impl=impl, exponent=exponent,
-                         dist_using_inner=dist_using_inner)
+        super(ConstWeighting, self).__init__(
+            impl=impl, exponent=exponent, dist_using_inner=dist_using_inner)
         self.__const = float(const)
         if self.const <= 0:
             raise ValueError('expected positive constant, got {}'
@@ -699,12 +707,12 @@ class ConstWeighting(Weighting):
         if other is self:
             return True
 
-        return (super().__eq__(other) and
+        return (super(ConstWeighting, self).__eq__(other) and
                 self.const == getattr(other, 'const', None))
 
     def __hash__(self):
         """Return ``hash(self)``."""
-        return super().__hash__() ^ hash(self.const)
+        return hash((super(ConstWeighting, self).__hash__(), self.const))
 
     def equiv(self, other):
         """Test if other is an equivalent weighting.
@@ -824,8 +832,8 @@ class CustomInner(Weighting):
 
             Can only be used if ``exponent`` is 2.0.
         """
-        super().__init__(impl=impl, exponent=2.0,
-                         dist_using_inner=dist_using_inner)
+        super(CustomInner, self).__init__(
+            impl=impl, exponent=2.0, dist_using_inner=dist_using_inner)
 
         if not callable(inner):
             raise TypeError('`inner` {!r} is not callable'
@@ -846,11 +854,12 @@ class CustomInner(Weighting):
             ``True`` if other is a `CustomInner`
             instance with the same inner product, ``False`` otherwise.
         """
-        return super().__eq__(other) and self.inner == other.inner
+        return (super(CustomInner, self).__eq__(other) and
+                self.inner == other.inner)
 
     def __hash__(self):
         """Return ``hash(self)``."""
-        return hash((super().__hash__(), self.inner))
+        return hash((super(CustomInner, self).__hash__(), self.inner))
 
     @property
     def repr_part(self):
@@ -892,7 +901,8 @@ class CustomNorm(Weighting):
         impl : string
             Specifier for the implementation backend
         """
-        super().__init__(impl=impl, exponent=1.0, dist_using_inner=False)
+        super(CustomNorm, self).__init__(
+            impl=impl, exponent=1.0, dist_using_inner=False)
 
         if not callable(norm):
             raise TypeError('`norm` {!r} is not callable'
@@ -917,11 +927,12 @@ class CustomNorm(Weighting):
             ``True`` if other is a `CustomNorm` instance with the same
             norm, ``False`` otherwise.
         """
-        return super().__eq__(other) and self.norm == other.norm
+        return (super(CustomNorm, self).__eq__(other) and
+                self.norm == other.norm)
 
     def __hash__(self):
         """Return ``hash(self)``."""
-        return hash((super().__hash__(), self.norm))
+        return hash((super(CustomNorm, self).__hash__(), self.norm))
 
     @property
     def repr_part(self):
@@ -965,7 +976,8 @@ class CustomDist(Weighting):
         impl : string
             Specifier for the implementation backend
         """
-        super().__init__(impl=impl, exponent=1.0, dist_using_inner=False)
+        super(CustomDist, self).__init__(
+            impl=impl, exponent=1.0, dist_using_inner=False)
 
         if not callable(dist):
             raise TypeError('`dist` {!r} is not callable'
@@ -994,11 +1006,12 @@ class CustomDist(Weighting):
             ``True`` if other is a `CustomDist` instance with the same
             dist, ``False`` otherwise.
         """
-        return super().__eq__(other) and self.dist == other.dist
+        return (super(CustomDist, self).__eq__(other) and
+                self.dist == other.dist)
 
     def __hash__(self):
         """Return ``hash(self)``."""
-        return hash((super().__hash__(), self.dist))
+        return hash((super(CustomDist, self).__hash__(), self.dist))
 
     @property
     def repr_part(self):
