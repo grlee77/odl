@@ -18,7 +18,7 @@ from odl.discr import uniform_partition
 from odl.tomo.geometry.detector import Flat1dDetector, Flat2dDetector
 from odl.tomo.geometry.geometry import Geometry, AxisOrientedGeometry
 from odl.tomo.util import euler_matrix, transform_system
-from odl.util import signature_string, indent_rows
+from odl.util import signature_string, indent
 
 
 __all__ = ('ParallelBeamGeometry',
@@ -467,8 +467,7 @@ class Parallel2dGeometry(ParallelBeamGeometry):
                 ['translation', self.translation.tolist(), None])
 
         sig_str = signature_string(posargs, optargs, sep=',\n')
-        return '{}(\n{}\n)'.format(self.__class__.__name__,
-                                   indent_rows(sig_str))
+        return '{}(\n{}\n)'.format(self.__class__.__name__, indent(sig_str))
 
 
 class Parallel3dEulerGeometry(ParallelBeamGeometry):
@@ -757,8 +756,7 @@ class Parallel3dEulerGeometry(ParallelBeamGeometry):
             optargs.append(['translation', self.translation.tolist(), None])
 
         sig_str = signature_string(posargs, optargs, sep=',\n')
-        return '{}(\n{}\n)'.format(self.__class__.__name__,
-                                   indent_rows(sig_str))
+        return '{}(\n{}\n)'.format(self.__class__.__name__, indent(sig_str))
 
 
 class Parallel3dAxisGeometry(ParallelBeamGeometry, AxisOrientedGeometry):
@@ -1054,8 +1052,7 @@ class Parallel3dAxisGeometry(ParallelBeamGeometry, AxisOrientedGeometry):
             optargs.append(['translation', self.translation.tolist(), None])
 
         sig_str = signature_string(posargs, optargs, sep=',\n')
-        return '{}(\n{}\n)'.format(self.__class__.__name__,
-                                   indent_rows(sig_str))
+        return '{}(\n{}\n)'.format(self.__class__.__name__, indent(sig_str))
 
     # Manually override the abstract method in `Geometry` since it's found
     # first
